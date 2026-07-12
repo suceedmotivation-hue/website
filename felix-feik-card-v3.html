@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Felix Feik</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#020202;
+    --metal-1:#eeeeef;
+    --metal-2:#c3c4c6;
+    --metal-3:#8d8e90;
+    --metal-4:#d9dadc;
+    --metal-edge-hi:#d6d7d9;
+    --metal-edge-mid:#767779;
+    --metal-edge-lo:#2c2c2d;
+    --ink:#5c5d5f;
+    --ink-soft:#8a8b8d;
+  }
+
+  *{box-sizing:border-box;}
+
+  html,body{
+    height:100%;
+    margin:0;
+    background:var(--bg);
+    overflow:hidden;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  body{
+    font-family:'Space Grotesk',sans-serif;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .vignette{
+    position:fixed;
+    inset:0;
+    background:
+      radial-gradient(ellipse at 50% 42%, rgba(255,255,255,0.035), transparent 48%),
+      radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.95), transparent 60%),
+      var(--bg);
+    pointer-events:none;
+  }
+
+  .stage{
+    position:relative;
+    width:100%;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    perspective:1400px;
+  }
+
+  .scene{
+    width:390px;
+    height:246px;
+    position:relative;
+    transform-style:preserve-3d;
+    cursor:grab;
+    touch-action:none;
+    animation:floatIn 1.5s cubic-bezier(.16,.85,.22,1) both;
+  }
+  .scene.dragging{cursor:grabbing;}
+
+  @keyframes floatIn{
+    0%{
+      opacity:0;
+      transform:translateY(140px) translateZ(-500px) scale(1.35);
+      filter:blur(6px);
+    }
+    60%{
+      opacity:1;
+      filter:blur(0px);
+    }
+    100%{
+      opacity:1;
+      transform:translateY(0) translateZ(0) scale(1);
+      filter:blur(0px);
+    }
+  }
+
+  .shadow{
+    position:absolute;
+    left:50%;
+    bottom:-46px;
+    width:78%;
+    height:26px;
+    transform:translateX(-50%);
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0.55), transparent 72%);
+    filter:blur(2px);
+    animation:shadowIn 1.5s cubic-bezier(.16,.85,.22,1) both;
+  }
+  @keyframes shadowIn{
+    0%{ opacity:0; transform:translateX(-50%) scale(1.5); }
+    60%{ opacity:0.4; }
+    100%{ opacity:1; transform:translateX(-50%) scale(1); }
+  }
+
+  .card{
+    width:100%;
+    height:100%;
+    position:relative;
+    transform-style:preserve-3d;
+    transform:rotateX(0deg) rotateY(-16deg);
+    will-change:transform;
+  }
+
+  .face{
+    position:absolute;
+    inset:0;
+    border-radius:13px;
+    backface-visibility:hidden;
+  }
+
+  .front, .back{
+    background:
+      repeating-linear-gradient(115deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 3px),
+      linear-gradient(135deg, var(--metal-1) 0%, var(--metal-3) 38%, var(--metal-4) 62%, var(--metal-2) 100%);
+    border:1px solid rgba(0,0,0,0.12);
+    box-shadow:
+      inset 0 1px 1px rgba(255,255,255,0.6),
+      inset 0 -1px 2px rgba(0,0,0,0.25);
+    transform:translateZ(1.5px);
+    overflow:hidden;
+  }
+
+  .front{
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    padding:22px 26px 20px;
+  }
+
+  .back{
+    transform:rotateY(180deg) translateZ(1.5px);
+    display:flex;
+    flex-direction:column;
+  }
+
+  .sheen{
+    position:absolute;
+    inset:0;
+    border-radius:13px;
+    background:radial-gradient(circle at var(--sx,50%) var(--sy,18%), rgba(255,255,255,0.55), transparent 40%);
+    mix-blend-mode:overlay;
+    pointer-events:none;
+  }
+
+  .edge{
+    position:absolute;
+    background:linear-gradient(180deg, var(--metal-edge-hi), var(--metal-edge-mid) 55%, var(--metal-edge-lo));
+  }
+  .edge.top,.edge.bottom{ left:0; width:100%; height:3px; }
+  .edge.left,.edge.right{ top:0; height:100%; width:3px; }
+  .edge.top{ transform:rotateX(90deg) translateZ(1.5px); top:0; }
+  .edge.bottom{ transform:rotateX(-90deg) translateZ(1.5px); bottom:0; }
+  .edge.left{ transform:rotateY(-90deg) translateZ(1.5px); left:0; }
+  .edge.right{ transform:rotateY(90deg) translateZ(1.5px); right:0; }
+
+  /* --- front layout --- */
+  .row-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+  }
+
+  .chip{
+    width:38px;
+    height:29px;
+    border-radius:5px;
+    background:
+      repeating-linear-gradient(180deg, rgba(0,0,0,0.16) 0px, rgba(0,0,0,0.16) 1px, transparent 1px, transparent 5px),
+      linear-gradient(135deg, var(--metal-4), var(--metal-3) 60%, var(--metal-2));
+    box-shadow:
+      inset 0 1px 1px rgba(255,255,255,0.7),
+      inset 0 -1px 1px rgba(0,0,0,0.3);
+    border:1px solid rgba(0,0,0,0.15);
+  }
+
+  .brandmark{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:11px;
+    letter-spacing:0.3em;
+    color:var(--ink-soft);
+    text-shadow:
+      -0.5px -0.5px 0.5px rgba(0,0,0,0.25),
+      0.5px 0.5px 0.5px rgba(255,255,255,0.65);
+  }
+
+  .number-block{
+    display:flex;
+    flex-direction:column;
+    gap:9px;
+    margin-top:6px;
+  }
+
+  .cardnum, .email-line{
+    display:block;
+    width:100%;
+    background:none;
+    border:none;
+    padding:5px 3px;
+    margin:0 -3px;
+    text-align:left;
+    cursor:pointer;
+    border-radius:6px;
+    font-family:'JetBrains Mono',monospace;
+    color:var(--ink);
+    text-shadow:
+      -0.6px -0.6px 0.5px rgba(0,0,0,0.32),
+      0.6px 0.6px 0.5px rgba(255,255,255,0.72);
+    transition:background 0.2s ease;
+  }
+  .cardnum{
+    font-size:20px;
+    letter-spacing:0.14em;
+  }
+  .email-line{
+    font-size:10.5px;
+    letter-spacing:0.06em;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+  }
+  .cardnum:hover, .email-line:hover{ background:rgba(0,0,0,0.055); }
+  .cardnum:active, .email-line:active{ background:rgba(0,0,0,0.09); }
+
+  .row-bottom{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+  }
+
+  .holder-label{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:7.5px;
+    letter-spacing:0.28em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+
+  .holder-name{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:14.5px;
+    letter-spacing:0.06em;
+    color:var(--ink);
+    text-shadow:
+      -0.6px -0.6px 0.5px rgba(0,0,0,0.32),
+      0.6px 0.6px 0.5px rgba(255,255,255,0.72);
+    margin-top:2px;
+  }
+
+  .motto{
+    text-align:right;
+    font-size:8px;
+    letter-spacing:0.16em;
+    line-height:1.6;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+  }
+
+  /* --- back layout --- */
+  .magstripe{
+    width:100%;
+    height:34px;
+    background:linear-gradient(180deg,#0c0c0c,#000);
+    margin-top:18px;
+  }
+
+  .signature-panel{
+    margin:20px 26px 0;
+    height:34px;
+    border-radius:3px;
+    background:
+      repeating-linear-gradient(100deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 4px),
+      linear-gradient(135deg, var(--metal-1), var(--metal-2));
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 14px;
+    box-shadow:inset 0 1px 2px rgba(0,0,0,0.25);
+  }
+
+  .signature-label{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:7px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+
+  .back-monogram{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    letter-spacing:0.1em;
+    color:var(--ink);
+    text-shadow:
+      -0.6px -0.6px 0.5px rgba(0,0,0,0.3),
+      0.6px 0.6px 0.5px rgba(255,255,255,0.7);
+  }
+
+  .overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(2,2,2,0.9);
+    backdrop-filter:blur(6px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.35s ease;
+    z-index:10;
+  }
+  .overlay.active{ opacity:1; pointer-events:auto; }
+
+  .zoom-panel{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:20px;
+    padding:44px 52px;
+    transform:scale(0.85);
+    opacity:0;
+    transition:transform 0.4s cubic-bezier(.2,.9,.25,1), opacity 0.35s ease;
+  }
+  .overlay.active .zoom-panel{ transform:scale(1); opacity:1; }
+
+  .zoom-label{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:10px;
+    letter-spacing:0.32em;
+    text-transform:uppercase;
+    color:#8a8a8a;
+  }
+
+  .zoom-value{
+    font-family:'JetBrains Mono',monospace;
+    font-size:clamp(20px, 6vw, 32px);
+    color:#f0f0f0;
+    letter-spacing:0.01em;
+    text-align:center;
+    word-break:break-word;
+  }
+
+  .copy-btn{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:500;
+    font-size:11.5px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:#0a0a0a;
+    background:linear-gradient(135deg,#f2f2f2,#c8c9cb);
+    border:none;
+    padding:12px 26px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:transform 0.15s ease, background 0.2s ease;
+  }
+  .copy-btn:hover{ transform:translateY(-1px); }
+  .copy-btn:active{ transform:translateY(0px) scale(0.97); }
+  .copy-btn.done{ background:linear-gradient(135deg,#9a9a9a,#6f6f6f); color:#fff; }
+
+  .close-x{
+    position:absolute;
+    top:26px;
+    right:26px;
+    width:38px;
+    height:38px;
+    border:1px solid rgba(255,255,255,0.18);
+    border-radius:50%;
+    background:none;
+    color:#9a9a9a;
+    font-size:15px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:color 0.2s ease, border-color 0.2s ease;
+  }
+  .close-x:hover{ color:#f0f0f0; border-color:rgba(255,255,255,0.4); }
+
+  @media (max-width:440px){
+    .scene{ width:320px; height:202px; }
+    .cardnum{ font-size:16px; }
+    .holder-name{ font-size:12.5px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .card{ transition:none !important; }
+    .scene, .shadow{ animation:none !important; opacity:1 !important; transform:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="vignette"></div>
+
+<div class="stage">
+  <div class="scene" id="scene">
+    <div class="shadow"></div>
+    <div class="card" id="card">
+      <div class="face front">
+        <div class="row-top">
+          <div class="chip"></div>
+          <div class="brandmark">FF</div>
+        </div>
+
+        <div class="number-block">
+          <button class="cardnum" data-label="Telefon" data-value="01774546861">0177 454 6861</button>
+          <button class="email-line" data-label="E-Mail" data-value="Feik.felix@icloud.com">feik.felix@icloud.com</button>
+        </div>
+
+        <div class="row-bottom">
+          <div>
+            <div class="holder-label">Karteninhaber</div>
+            <div class="holder-name">FELIX FEIK</div>
+          </div>
+          <div class="motto">weniger reden<br>mehr machen</div>
+        </div>
+      </div>
+
+      <div class="face back">
+        <div class="magstripe"></div>
+        <div class="signature-panel">
+          <div class="signature-label">Autorisierte&nbsp;Unterschrift</div>
+          <div class="back-monogram">FF</div>
+        </div>
+      </div>
+
+      <div class="edge top"></div>
+      <div class="edge bottom"></div>
+      <div class="edge left"></div>
+      <div class="edge right"></div>
+
+      <div class="sheen"></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <button class="close-x" id="closeX">&#10005;</button>
+  <div class="zoom-panel">
+    <div class="zoom-label" id="zoomLabel">Telefon</div>
+    <div class="zoom-value" id="zoomValue">01774546861</div>
+    <button class="copy-btn" id="copyBtn">Kopieren</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const scene = document.getElementById('scene');
+  const card = document.getElementById('card');
+
+  let rotX = 0, rotY = -16;
+  let dragging = false;
+  let lastX = 0, lastY = 0;
+  let userInteracted = false;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function applyTransform(){
+    card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+  }
+
+  function updateSheen(px, py){
+    const rect = scene.getBoundingClientRect();
+    const sx = ((px - rect.left) / rect.width) * 100;
+    const sy = ((py - rect.top) / rect.height) * 100;
+    card.style.setProperty('--sx', sx + '%');
+    card.style.setProperty('--sy', sy + '%');
+  }
+
+  function pointerDown(e){
+    dragging = true;
+    userInteracted = true;
+    scene.classList.add('dragging');
+    const p = e.touches ? e.touches[0] : e;
+    lastX = p.clientX; lastY = p.clientY;
+  }
+
+  function pointerMove(e){
+    const p = e.touches ? e.touches[0] : e;
+    updateSheen(p.clientX, p.clientY);
+    if(!dragging) return;
+    const dx = p.clientX - lastX;
+    const dy = p.clientY - lastY;
+    lastX = p.clientX; lastY = p.clientY;
+    rotY += dx * 0.4;
+    rotX -= dy * 0.4;
+    rotX = Math.max(-24, Math.min(24, rotX));
+    applyTransform();
+  }
+
+  function pointerUp(){
+    dragging = false;
+    scene.classList.remove('dragging');
+  }
+
+  scene.addEventListener('mousedown', pointerDown);
+  window.addEventListener('mousemove', pointerMove);
+  window.addEventListener('mouseup', pointerUp);
+
+  scene.addEventListener('touchstart', pointerDown, {passive:true});
+  window.addEventListener('touchmove', pointerMove, {passive:true});
+  window.addEventListener('touchend', pointerUp);
+
+  applyTransform();
+
+  let idleRAF = null;
+  if(!reduceMotion){
+    let t = 0;
+    function idle(){
+      if(!userInteracted){
+        t += 0.006;
+        rotY = -16 + Math.sin(t) * 5;
+        applyTransform();
+      }
+      idleRAF = requestAnimationFrame(idle);
+    }
+    setTimeout(() => { idleRAF = requestAnimationFrame(idle); }, 1500);
+  }
+
+  const overlay = document.getElementById('overlay');
+  const zoomLabel = document.getElementById('zoomLabel');
+  const zoomValue = document.getElementById('zoomValue');
+  const copyBtn = document.getElementById('copyBtn');
+  const closeX = document.getElementById('closeX');
+  let currentValue = '';
+
+  document.querySelectorAll('.cardnum, .email-line').forEach(row => {
+    row.addEventListener('click', () => {
+      if(dragging) return;
+      currentValue = row.dataset.value;
+      zoomLabel.textContent = row.dataset.label;
+      zoomValue.textContent = currentValue;
+      copyBtn.textContent = 'Kopieren';
+      copyBtn.classList.remove('done');
+      overlay.classList.add('active');
+    });
+  });
+
+  function closeOverlay(){
+    overlay.classList.remove('active');
+  }
+
+  closeX.addEventListener('click', closeOverlay);
+  overlay.addEventListener('click', (e) => {
+    if(e.target === overlay) closeOverlay();
+  });
+
+  copyBtn.addEventListener('click', async () => {
+    try{
+      await navigator.clipboard.writeText(currentValue);
+    }catch(err){
+      const ta = document.createElement('textarea');
+      ta.value = currentValue;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    copyBtn.textContent = 'Kopiert';
+    copyBtn.classList.add('done');
+    setTimeout(closeOverlay, 900);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') closeOverlay();
+  });
+})();
+</script>
+
+</body>
+</html>
